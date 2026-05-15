@@ -23,8 +23,8 @@ function SignupPage() {
     const { error } = await signUp(email, password);
     setLoading(false);
     if (error) return toast.error(error.message);
-    toast.success("Account created — check your email to confirm, then log in.");
-    nav({ to: "/login" });
+    toast.success("Account created");
+    nav({ to: "/dashboard" });
   };
 
   return <AuthShell title="Create your shop">

@@ -83,5 +83,5 @@ function Empty({ msg }: { msg: string }) {
   return <div className="py-6 text-center text-sm text-muted-foreground">{msg}</div>;
 }
 export function fmt(n: number) {
-  return new Intl.NumberFormat(undefined, { style: "currency", currency: "USD" }).format(Number(n || 0));
+  return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 2 }).format(Number(n || 0));
 }

@@ -100,6 +100,15 @@ export const paymentsService = {
     if (error) throw error;
     return data ?? [];
   },
+  listByCustomer: async (customer_id: string): Promise<Payment[]> => {
+    const { data, error } = await supabase
+      .from("payments")
+      .select("*")
+      .eq("customer_id", customer_id)
+      .order("paid_at", { ascending: false });
+    if (error) throw error;
+    return data ?? [];
+  },
   create: async (input: { customer_id: string; credit_entry_id?: string | null; amount: number; method?: string; notes?: string }) => {
     const user_id = await getUserId();
     const { data, error } = await supabase.from("payments").insert({ user_id, ...input }).select().single();

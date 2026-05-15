@@ -53,7 +53,15 @@ export const creditsService = {
       .from("credit_entries")
       .select("*, customer:customers(name)")
       .order("created_at", { ascending: false });
+    if (error) throw error;
+    return (data ?? []) as any;
+  },
   listByCustomer: async (customer_id: string): Promise<CreditEntry[]> => {
+    const { data, error } = await supabase
+      .from("credit_entries")
+      .select("*")
+      .eq("customer_id", customer_id)
+      .order("created_at", { ascending: false });
     const { data, error } = await supabase
       .from("credit_entries")
       .select("*")

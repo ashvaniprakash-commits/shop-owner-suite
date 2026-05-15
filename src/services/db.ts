@@ -24,6 +24,11 @@ export const customersService = {
     if (error) throw error;
     return data ?? [];
   },
+  get: async (id: string): Promise<Customer | null> => {
+    const { data, error } = await supabase.from("customers").select("*").eq("id", id).maybeSingle();
+    if (error) throw error;
+    return data;
+  },
   create: async (input: { name: string; phone?: string; email?: string; address?: string; notes?: string }) => {
     const user_id = await getUserId();
     const { data, error } = await supabase.from("customers").insert({ user_id, ...input }).select().single();
@@ -48,8 +53,22 @@ export const creditsService = {
       .from("credit_entries")
       .select("*, customer:customers(name)")
       .order("created_at", { ascending: false });
+  listByCustomer: async (customer_id: string): Promise<CreditEntry[]> => {
+    const { data, error } = await supabase
+      .from("credit_entries")
+      .select("*")
+      .eq("customer_id", customer_id)
+      .order("created_at", { ascending: false });
     if (error) throw error;
-    return (data ?? []) as any;
+    return data ?? [];
+  },
+  createMany: async (customer_id: string, items: { description: string; amount: number }[]) => {
+    if (items.length === 0) return [];
+    const user_id = await getUserId();
+    const rows = items.map((it) => ({ user_id, customer_id, description: it.description, amount: it.amount }));
+    const { data, error } = await supabase.from("credit_entries").insert(rows).select();
+    if (error) throw error;
+    return data ?? [];
   },
   create: async (input: { customer_id: string; amount: number; description?: string; due_date?: string | null; status?: string }) => {
     const user_id = await getUserId();

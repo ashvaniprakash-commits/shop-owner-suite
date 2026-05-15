@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { customersService, type Customer } from "@/services/db";
@@ -27,7 +27,7 @@ function CustomersPage() {
       }/>
       {isLoading ? <p className="text-sm text-muted-foreground">Loading…</p> :
         data.length === 0 ? <EmptyState msg="No customers yet. Add your first one." /> :
-        <div className="overflow-hidden rounded-2xl border">
+        <div className="overflow-hidden rounded-xl border">
           <table className="w-full text-sm">
             <thead className="bg-secondary text-left text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
@@ -41,7 +41,11 @@ function CustomersPage() {
             <tbody>
               {data.map((c: Customer) => (
                 <tr key={c.id} className="border-t">
-                  <td className="px-5 py-3 font-medium">{c.name}</td>
+                  <td className="px-5 py-3 font-medium">
+                    <Link to="/customers/$customerId" params={{ customerId: c.id }} className="hover:text-primary hover:underline">
+                      {c.name}
+                    </Link>
+                  </td>
                   <td className="px-5 py-3 text-muted-foreground">{c.phone ?? "—"}</td>
                   <td className="px-5 py-3 text-muted-foreground">{c.email ?? "—"}</td>
                   <td className="px-5 py-3 text-muted-foreground">{c.notes ?? "—"}</td>

@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { creditsService, customersService } from "@/services/db";
+import { creditsService, customersService, paymentsService } from "@/services/db";
 import { fmt } from "./dashboard";
 import { Header } from "./customers";
 import { parseItems, type ParsedItem } from "@/lib/parse-items";
@@ -26,8 +26,14 @@ function CustomerDetail() {
     queryKey: ["credits-by-customer", customerId],
     queryFn: () => creditsService.listByCustomer(customerId),
   });
+  const pays = useQuery({
+    queryKey: ["payments-by-customer", customerId],
+    queryFn: () => paymentsService.listByCustomer(customerId),
+  });
 
-  const total = (entries.data ?? []).reduce((s, e) => s + Number(e.amount || 0), 0);
+  const totalCredit = (entries.data ?? []).reduce((s, e) => s + Number(e.amount || 0), 0);
+  const totalPaid = (pays.data ?? []).reduce((s, p) => s + Number(p.amount || 0), 0);
+  const outstanding = totalCredit - totalPaid;
 
   const save = useMutation({
     mutationFn: (items: ParsedItem[]) =>
@@ -49,6 +55,11 @@ function CustomerDetail() {
 
   const c = customer.data;
 
+  const timeline = [
+    ...(entries.data ?? []).map((e) => ({ kind: "credit" as const, id: e.id, when: e.created_at, label: e.description ?? "—", amount: Number(e.amount) })),
+    ...(pays.data ?? []).map((p) => ({ kind: "payment" as const, id: p.id, when: p.paid_at, label: p.method ? `Payment · ${p.method}` : "Payment", amount: Number(p.amount) })),
+  ].sort((a, b) => (a.when < b.when ? 1 : -1));
+
   return (
     <div>
       <Link to="/customers" className="mb-4 inline-block text-xs text-muted-foreground hover:text-primary">← All customers</Link>
@@ -66,43 +77,61 @@ function CustomerDetail() {
         }
       />
 
-      {showAdd && <QuickAddPanel onSubmit={(items) => save.mutate(items)} pending={save.isPending} />}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Stat label="Total credit" value={fmt(totalCredit)} />
+        <Stat label="Total paid" value={fmt(totalPaid)} />
+        <Stat label="Outstanding" value={fmt(outstanding)} accent={outstanding > 0} />
+      </div>
+
+      {showAdd && <div className="mt-6"><QuickAddPanel onSubmit={(items) => save.mutate(items)} pending={save.isPending} /></div>}
 
       <div className="mt-8 overflow-hidden rounded-xl border">
         <div className="flex items-center justify-between bg-secondary px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          <span>Credit history</span>
-          <span>Total: <span className="text-foreground">{fmt(total)}</span></span>
+          <span>Activity</span>
+          <span>Outstanding: <span className={outstanding > 0 ? "text-primary" : "text-foreground"}>{fmt(outstanding)}</span></span>
         </div>
-        {entries.isLoading ? (
+        {entries.isLoading || pays.isLoading ? (
           <p className="p-6 text-sm text-muted-foreground">Loading…</p>
-        ) : entries.data?.length === 0 ? (
-          <p className="p-10 text-center text-sm text-muted-foreground">No entries yet. Add the first one.</p>
+        ) : timeline.length === 0 ? (
+          <p className="p-10 text-center text-sm text-muted-foreground">No activity yet.</p>
         ) : (
           <table className="w-full text-sm">
             <thead className="text-left text-xs uppercase tracking-wide text-muted-foreground">
               <tr className="border-b">
                 <th className="px-5 py-3">Item</th>
+                <th className="px-5 py-3">Type</th>
                 <th className="px-5 py-3">When</th>
-                <th className="px-5 py-3 text-right">Price</th>
+                <th className="px-5 py-3 text-right">Amount</th>
               </tr>
             </thead>
             <tbody>
-              {entries.data!.map((e) => (
-                <tr key={e.id} className="border-t">
-                  <td className="px-5 py-3 font-medium">{e.description ?? "—"}</td>
-                  <td className="px-5 py-3 text-muted-foreground">{new Date(e.created_at).toLocaleString()}</td>
-                  <td className="px-5 py-3 text-right font-semibold">{fmt(Number(e.amount))}</td>
+              {timeline.map((t) => (
+                <tr key={`${t.kind}-${t.id}`} className="border-t">
+                  <td className="px-5 py-3 font-medium">{t.label}</td>
+                  <td className="px-5 py-3">
+                    <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${t.kind === "credit" ? "bg-primary/10 text-primary" : "bg-secondary text-foreground"}`}>
+                      {t.kind === "credit" ? "Credit" : "Paid"}
+                    </span>
+                  </td>
+                  <td className="px-5 py-3 text-muted-foreground">{new Date(t.when).toLocaleString()}</td>
+                  <td className={`px-5 py-3 text-right font-semibold ${t.kind === "payment" ? "text-muted-foreground" : ""}`}>
+                    {t.kind === "payment" ? "− " : ""}{fmt(t.amount)}
+                  </td>
                 </tr>
               ))}
-              <tr className="border-t bg-secondary/60">
-                <td className="px-5 py-3 font-semibold">Total</td>
-                <td></td>
-                <td className="px-5 py-3 text-right font-bold text-primary">{fmt(total)}</td>
-              </tr>
             </tbody>
           </table>
         )}
       </div>
+    </div>
+  );
+}
+
+function Stat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+  return (
+    <div className="rounded-xl border p-5">
+      <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className={`mt-2 text-2xl font-bold ${accent ? "text-primary" : ""}`}>{value}</div>
     </div>
   );
 }

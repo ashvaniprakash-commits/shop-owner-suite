@@ -43,7 +43,7 @@ function CustomersPage() {
               {data.map((c: Customer) => (
                 <tr key={c.id} className="border-t">
                   <td className="px-5 py-3 font-medium">
-                    <Link to="/customers/$customerId" params={{ customerId: c.id }} className="hover:text-primary hover:underline">
+                    <Link to="/customers/$customerId" params={{ customerId: c.id }} target="_blank" rel="noopener" className="hover:text-primary hover:underline">
                       {c.name}
                     </Link>
                   </td>

@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { customersService, type Customer } from "@/services/db";
 import { toast } from "sonner";
+import { MicButton, useMic } from "@/lib/use-mic";
 
 export const Route = createFileRoute("/_authenticated/customers")({
   component: CustomersPage,

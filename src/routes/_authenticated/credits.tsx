@@ -75,7 +75,7 @@ function CreditsPage() {
               {summaries.map((s) => (
                 <tr key={s.customer_id} className="border-t hover:bg-secondary/40">
                   <td className="px-5 py-3 font-medium">
-                    <Link to="/customers/$customerId" params={{ customerId: s.customer_id }} className="hover:text-primary hover:underline">
+                    <Link to="/customers/$customerId" params={{ customerId: s.customer_id }} target="_blank" rel="noopener" className="hover:text-primary hover:underline">
                       {s.name}
                     </Link>
                   </td>

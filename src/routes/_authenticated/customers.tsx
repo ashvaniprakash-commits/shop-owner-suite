@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { customersService, type Customer } from "@/services/db";
 import { toast } from "sonner";
+import { MicButton, useMic } from "@/lib/use-mic";
 
 export const Route = createFileRoute("/_authenticated/customers")({
   component: CustomersPage,
@@ -42,7 +43,7 @@ function CustomersPage() {
               {data.map((c: Customer) => (
                 <tr key={c.id} className="border-t">
                   <td className="px-5 py-3 font-medium">
-                    <Link to="/customers/$customerId" params={{ customerId: c.id }} className="hover:text-primary hover:underline">
+                    <Link to="/customers/$customerId" params={{ customerId: c.id }} target="_blank" rel="noopener" className="hover:text-primary hover:underline">
                       {c.name}
                     </Link>
                   </td>
@@ -114,12 +115,27 @@ export function Modal({ title, onClose, children }: { title: string; onClose: ()
     </div>
   );
 }
-export function Input({ label, type = "text", value, onChange, required }: { label: string; type?: string; value: string; onChange: (v: string) => void; required?: boolean }) {
+export function Input({ label, type = "text", value, onChange, required, mic = true }: { label: string; type?: string; value: string; onChange: (v: string) => void; required?: boolean; mic?: boolean }) {
+  const { listening, supported, toggle } = useMic((transcript, isFinal) => {
+    if (!isFinal) return;
+    if (type === "number") {
+      const m = transcript.match(/\d+(\.\d+)?/);
+      if (m) onChange(m[0]);
+    } else if (type === "email") {
+      onChange(transcript.replace(/\s+/g, "").toLowerCase());
+    } else {
+      onChange(value ? `${value} ${transcript}`.trim() : transcript.trim());
+    }
+  });
   return (
     <label className="block">
       <span className="mb-1.5 block text-xs font-medium text-muted-foreground">{label}</span>
-      <input type={type} required={required} value={value} onChange={(e) => onChange(e.target.value)}
-        className="h-11 w-full rounded-lg border bg-background px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
+      <div className="flex items-center gap-2">
+        <input type={type} required={required} value={value} onChange={(e) => onChange(e.target.value)}
+          className="h-11 w-full rounded-lg border bg-background px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
+        {mic && <MicButton listening={listening} supported={supported} onClick={toggle} size={44} />}
+      </div>
+      {mic && listening && <p className="mt-1 text-[11px] text-primary">Listening…</p>}
     </label>
   );
 }

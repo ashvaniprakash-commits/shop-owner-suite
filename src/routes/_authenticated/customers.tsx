@@ -1,9 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { customersService, type Customer } from "@/services/db";
 import { toast } from "sonner";
-import { MicButton, useMic } from "@/lib/use-mic";
 
 export const Route = createFileRoute("/_authenticated/customers")({
   component: CustomersPage,
@@ -12,8 +11,11 @@ export const Route = createFileRoute("/_authenticated/customers")({
 
 function CustomersPage() {
   const qc = useQueryClient();
+  const loc = useLocation();
   const { data = [], isLoading } = useQuery({ queryKey: ["customers"], queryFn: customersService.list });
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState("all");
 
   const remove = useMutation({
     mutationFn: customersService.remove,
@@ -21,43 +23,69 @@ function CustomersPage() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const customerSelected = loc.pathname.startsWith("/customers/");
+
   return (
     <div>
       <Header title="Customers" sub="Your private address book." action={
-        <button onClick={() => setOpen(true)} className="h-10 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground hover:opacity-90">+ New customer</button>
+        <button onClick={() => setOpen(true)} className="h-10 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground hover:opacity-90 whitespace-nowrap">+ New customer</button>
       }/>
       {isLoading ? <p className="text-sm text-muted-foreground">Loading…</p> :
         data.length === 0 ? <EmptyState msg="No customers yet. Add your first one." /> :
-        <div className="overflow-hidden rounded-xl border">
-          <table className="w-full text-sm">
-            <thead className="bg-secondary text-left text-xs uppercase tracking-wide text-muted-foreground">
-              <tr>
-                <th className="px-5 py-3">Name</th>
-                <th className="px-5 py-3">Phone</th>
-                <th className="px-5 py-3">Email</th>
-                <th className="px-5 py-3">Notes</th>
-                <th className="px-5 py-3"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.map((c: Customer) => (
-                <tr key={c.id} className="border-t">
-                  <td className="px-5 py-3 font-medium">
-                    <Link to="/customers/$customerId" params={{ customerId: c.id }} target="_blank" rel="noopener" className="hover:text-primary hover:underline">
-                      {c.name}
-                    </Link>
-                  </td>
-                  <td className="px-5 py-3 text-muted-foreground">{c.phone ?? "—"}</td>
-                  <td className="px-5 py-3 text-muted-foreground">{c.email ?? "—"}</td>
-                  <td className="px-5 py-3 text-muted-foreground">{c.notes ?? "—"}</td>
-                  <td className="px-5 py-3 text-right">
-                    <button onClick={() => confirm("Remove this customer?") && remove.mutate(c.id)} className="text-xs text-muted-foreground hover:text-primary">Remove</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        (customerSelected ? (
+          <div className="rounded-xl border bg-background p-6 shadow-sm">
+            <Outlet />
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex-1">
+                <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search customers" className="h-10 w-full rounded-lg border bg-background px-3 text-sm outline-none" />
+              </div>
+              <div className="w-40">
+                <select value={filter} onChange={(e) => setFilter(e.target.value)} className="h-10 w-full rounded-lg border bg-background px-3 text-sm outline-none">
+                  <option value="all">All</option>
+                  <option value="hasPhone">Has phone</option>
+                  <option value="hasNotes">Has notes</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="overflow-hidden rounded-xl border bg-background">
+              <table className="w-full text-sm">
+                <thead className="bg-secondary text-left text-xs uppercase tracking-wide text-muted-foreground">
+                  <tr>
+                    <th className="px-5 py-3">Name</th>
+                    <th className="px-5 py-3">Phone</th>
+                    <th className="px-5 py-3">Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data
+                    .filter((c: Customer) => {
+                      const q = query.trim().toLowerCase();
+                      if (q && ![c.name, c.phone, c.notes].join(" ").toLowerCase().includes(q)) return false;
+                      if (filter === "hasPhone" && !c.phone) return false;
+                      if (filter === "hasNotes" && !c.notes) return false;
+                      return true;
+                    })
+                    .slice(0, 25)
+                    .map((c: Customer) => (
+                      <tr key={c.id} className="border-t">
+                        <td className="px-5 py-3 font-medium">
+                          <Link to="/customers/$customerId" params={{ customerId: c.id }} className="hover:text-primary hover:underline">
+                            {c.name}
+                          </Link>
+                        </td>
+                        <td className="px-5 py-3 text-muted-foreground">{c.phone ?? "—"}</td>
+                        <td className="px-5 py-3 text-muted-foreground">{c.notes ?? "—"}</td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ))
       }
       {open && <CustomerDialog onClose={() => setOpen(false)} />}
     </div>
@@ -115,27 +143,12 @@ export function Modal({ title, onClose, children }: { title: string; onClose: ()
     </div>
   );
 }
-export function Input({ label, type = "text", value, onChange, required, mic = true }: { label: string; type?: string; value: string; onChange: (v: string) => void; required?: boolean; mic?: boolean }) {
-  const { listening, supported, toggle } = useMic((transcript, isFinal) => {
-    if (!isFinal) return;
-    if (type === "number") {
-      const m = transcript.match(/\d+(\.\d+)?/);
-      if (m) onChange(m[0]);
-    } else if (type === "email") {
-      onChange(transcript.replace(/\s+/g, "").toLowerCase());
-    } else {
-      onChange(value ? `${value} ${transcript}`.trim() : transcript.trim());
-    }
-  });
+export function Input({ label, type = "text", value, onChange, required }: { label: string; type?: string; value: string; onChange: (v: string) => void; required?: boolean }) {
   return (
     <label className="block">
       <span className="mb-1.5 block text-xs font-medium text-muted-foreground">{label}</span>
-      <div className="flex items-center gap-2">
-        <input type={type} required={required} value={value} onChange={(e) => onChange(e.target.value)}
-          className="h-11 w-full rounded-lg border bg-background px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
-        {mic && <MicButton listening={listening} supported={supported} onClick={toggle} size={44} />}
-      </div>
-      {mic && listening && <p className="mt-1 text-[11px] text-primary">Listening…</p>}
+      <input type={type} required={required} value={value} onChange={(e) => onChange(e.target.value)}
+        className="h-11 w-full rounded-lg border bg-background px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
     </label>
   );
 }

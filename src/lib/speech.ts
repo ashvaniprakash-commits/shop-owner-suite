@@ -8,6 +8,7 @@ export function createSpeechRecognizer(opts: {
   onResult: (transcript: string, isFinal: boolean) => void;
   onError?: (err: string) => void;
   onEnd?: () => void;
+  lang?: string;
 }): SpeechHandle | null {
   if (typeof window === "undefined") return null;
   const SR =
@@ -16,7 +17,7 @@ export function createSpeechRecognizer(opts: {
   const rec = new SR();
   rec.continuous = true;
   rec.interimResults = true;
-  rec.lang = navigator.language || "en-US";
+  rec.lang = opts.lang || navigator.language || "en-US";
   rec.onresult = (event: any) => {
     let interim = "";
     let final = "";

@@ -47,11 +47,26 @@ function ReportsPage() {
       .sort((a, b) => b.total_credit - a.total_credit);
   }, [credits.data, payments.data]);
 
+  const dailyCreditGroups = useMemo(() => {
+    const groups = new Map<string, { date: string; entries: any[] }>();
+    for (const credit of credits.data ?? []) {
+      const dateKey = new Date(credit.created_at).toLocaleDateString();
+      const entry = groups.get(dateKey);
+      if (entry) entry.entries.push(credit);
+      else groups.set(dateKey, { date: dateKey, entries: [credit] });
+    }
+    return Array.from(groups.values()).sort((a, b) => {
+      const dateA = new Date(a.entries[0].created_at).getTime();
+      const dateB = new Date(b.entries[0].created_at).getTime();
+      return dateB - dateA;
+    });
+  }, [credits.data]);
+
   return (
     <div>
       <Header title="Monthly reports" sub="Snapshots of your shop, month by month." action={
         <button disabled={generate.isPending} onClick={() => generate.mutate()} className="h-10 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50">
-          {generate.isPending ? "Generating…" : "Generate this month"}
+          {generate.isPending ? "Generating…" : "Generate"}
         </button>
       }/>
 
@@ -71,6 +86,41 @@ function ReportsPage() {
         </div>
       }
 
+      <div className="mt-10">
+        <h2 className="text-xl font-bold tracking-tight">Daily itemized purchases</h2>
+        <p className="mt-1 text-sm text-muted-foreground">See what was bought on each day from credit entries.</p>
+        {credits.isLoading ? (
+          <p className="mt-6 text-sm text-muted-foreground">Loading…</p>
+        ) : dailyCreditGroups.length === 0 ? (
+          <div className="mt-6"><EmptyState msg="No daily purchase entries yet." /></div>
+        ) : (
+          <div className="mt-6 space-y-4">
+            {dailyCreditGroups.map((group) => (
+              <div key={group.date} className="rounded-2xl border p-5">
+                <div className="mb-3 font-medium">{group.date}</div>
+                <div className="space-y-3">
+                  {group.entries.map((entry) => (
+                    <div key={entry.id} className="rounded-xl border bg-background p-4">
+                      <div className="flex items-center justify-between gap-4 text-sm font-medium">
+                        <span>{fmt(Number(entry.amount || 0))}</span>
+                        <span className="text-muted-foreground">{new Date(entry.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                      </div>
+                      {entry.description ? (
+                        <div className="mt-3 space-y-1 text-sm text-muted-foreground">
+                          {entry.description.split("\n").map((line: string, idx: number) => line.trim() ? <div key={idx}>• {line}</div> : null)}
+                        </div>
+                      ) : (
+                        <p className="mt-3 text-sm text-muted-foreground">No item details.</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div className="mt-12">
         <h2 className="text-xl font-bold tracking-tight">Customer report</h2>
         <p className="mt-1 text-sm text-muted-foreground">Sorted by highest credit. Tap a name to open their dashboard.</p>
@@ -86,7 +136,6 @@ function ReportsPage() {
                 <tr>
                   <th className="px-5 py-3">Customer</th>
                   <th className="px-5 py-3 text-right">Credit</th>
-                  <th className="px-5 py-3 text-right">Paid</th>
                   <th className="px-5 py-3 text-right">Outstanding</th>
                 </tr>
               </thead>
@@ -94,12 +143,11 @@ function ReportsPage() {
                 {customerRows.map((s) => (
                   <tr key={s.customer_id} className="border-t hover:bg-secondary/40">
                     <td className="px-5 py-3 font-medium">
-                      <Link to="/customers/$customerId" params={{ customerId: s.customer_id }} target="_blank" rel="noopener" className="hover:text-primary hover:underline">
+                      <Link to="/customers/$customerId" params={{ customerId: s.customer_id }} className="hover:text-primary hover:underline">
                         {s.name}
                       </Link>
                     </td>
                     <td className="px-5 py-3 text-right">{fmt(s.total_credit)}</td>
-                    <td className="px-5 py-3 text-right text-muted-foreground">{fmt(s.total_paid)}</td>
                     <td className={`px-5 py-3 text-right font-semibold ${s.outstanding > 0 ? "text-primary" : ""}`}>{fmt(s.outstanding)}</td>
                   </tr>
                 ))}

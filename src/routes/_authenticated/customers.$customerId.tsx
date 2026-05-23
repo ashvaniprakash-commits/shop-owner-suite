@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { creditsService, customersService, paymentsService } from "@/services/db";
@@ -17,6 +17,8 @@ function CustomerDetail() {
   const { customerId } = Route.useParams();
   const qc = useQueryClient();
   const [showAdd, setShowAdd] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
+  const navigate = useNavigate();
 
   const customer = useQuery({
     queryKey: ["customer", customerId],
@@ -50,6 +52,27 @@ function CustomerDetail() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const updateCustomer = useMutation({
+    mutationFn: (patch: Partial<any>) => customersService.update(customerId, patch),
+    onSuccess: (d) => {
+      toast.success("Customer updated");
+      qc.invalidateQueries({ queryKey: ["customer", customerId] });
+      qc.invalidateQueries({ queryKey: ["customers"] });
+      setShowEdit(false);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const removeCustomer = useMutation({
+    mutationFn: () => customersService.remove(customerId),
+    onSuccess: () => {
+      toast.success("Customer removed");
+      qc.invalidateQueries({ queryKey: ["customers"] });
+      navigate({ to: "/customers" });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   if (customer.isLoading) return <p className="text-sm text-muted-foreground">Loading…</p>;
   if (!customer.data) return <p className="text-sm text-muted-foreground">Customer not found.</p>;
 
@@ -67,61 +90,102 @@ function CustomerDetail() {
       <Header
         title={c.name}
         sub={[c.phone, c.email].filter(Boolean).join(" · ") || "Customer profile"}
-        action={
-          <button
-            onClick={() => setShowAdd((v) => !v)}
-            className="h-10 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground hover:opacity-90"
-          >
-            {showAdd ? "Close" : "+ Add entry"}
-          </button>
-        }
       />
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="mb-4 flex flex-col gap-2 sm:flex-row">
+        <button onClick={() => setShowEdit(true)} className="h-10 rounded-full border px-4 text-sm font-medium hover:bg-secondary">Edit</button>
+        <button onClick={() => confirm('Remove this customer?') && removeCustomer.mutate()} className="h-10 rounded-full border px-4 text-sm font-medium text-red-600 hover:bg-secondary">Remove</button>
+        <button
+          onClick={async () => {
+            try {
+              const el = document.getElementById("customer-print");
+              if (!el) throw new Error("Content not found");
+              const { default: html2canvas } = await import("html2canvas");
+              const { jsPDF } = await import("jspdf");
+              const canvas = await html2canvas(el, { scale: 2 });
+              const imgData = canvas.toDataURL("image/png");
+              const pdf = new jsPDF("p", "pt", "a4");
+              const pdfWidth = pdf.internal.pageSize.getWidth();
+              const imgProps = pdf.getImageProperties(imgData);
+              const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+              pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+              const blob = pdf.output("blob");
+              const filename = `${c.name.replace(/[^a-z0-9\-\_ ]/gi, "") || "customer"}-ledger.pdf`;
+              const file = new File([blob], filename, { type: "application/pdf" });
+              if ((navigator as any).canShare && (navigator as any).canShare({ files: [file] })) {
+                await (navigator as any).share({ files: [file], title: `${c.name} ledger`, text: `Ledger for ${c.name}` });
+              } else {
+                pdf.save(filename);
+              }
+            } catch (err: any) {
+              toast.error(err?.message || "Failed to create PDF");
+            }
+          }}
+          className="h-10 rounded-full border px-4 text-sm font-medium hover:bg-secondary"
+        >
+          Share
+        </button>
+        <button
+          onClick={() => setShowAdd((v) => !v)}
+          className="h-10 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground hover:opacity-90"
+        >
+          {showAdd ? "Close" : "+ Add entry"}
+        </button>
+      </div>
+
+      {showEdit && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setShowEdit(false)}>
+          <div className="w-full max-w-md rounded-2xl bg-background p-6 shadow-[var(--shadow-pop)]" onClick={(e) => e.stopPropagation()}>
+            <h2 className="mb-4 text-xl font-semibold">Edit customer</h2>
+            <EditForm initial={c} onCancel={() => setShowEdit(false)} onSave={(patch) => updateCustomer.mutate(patch)} pending={updateCustomer.isPending} />
+          </div>
+        </div>
+      )}
+
+      <div id="customer-print">
+        <div className="grid gap-4 sm:grid-cols-3">
         <Stat label="Total credit" value={fmt(totalCredit)} />
         <Stat label="Total paid" value={fmt(totalPaid)} />
         <Stat label="Outstanding" value={fmt(outstanding)} accent={outstanding > 0} />
-      </div>
+        </div>
 
       {showAdd && <div className="mt-6"><QuickAddPanel onSubmit={(items) => save.mutate(items)} pending={save.isPending} /></div>}
 
-      <div className="mt-8 overflow-hidden rounded-xl border">
-        <div className="flex items-center justify-between bg-secondary px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          <span>Activity</span>
-          <span>Outstanding: <span className={outstanding > 0 ? "text-primary" : "text-foreground"}>{fmt(outstanding)}</span></span>
-        </div>
+        <div className="mt-8">
+          <div className="flex items-center justify-between border-b px-0 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <span>Activity</span>
+            <span>Outstanding: <span className={outstanding > 0 ? "text-primary" : "text-foreground"}>{fmt(outstanding)}</span></span>
+          </div>
         {entries.isLoading || pays.isLoading ? (
           <p className="p-6 text-sm text-muted-foreground">Loading…</p>
         ) : timeline.length === 0 ? (
           <p className="p-10 text-center text-sm text-muted-foreground">No activity yet.</p>
         ) : (
-          <table className="w-full text-sm">
-            <thead className="text-left text-xs uppercase tracking-wide text-muted-foreground">
-              <tr className="border-b">
-                <th className="px-5 py-3">Item</th>
-                <th className="px-5 py-3">Type</th>
-                <th className="px-5 py-3">When</th>
-                <th className="px-5 py-3 text-right">Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              {timeline.map((t) => (
-                <tr key={`${t.kind}-${t.id}`} className="border-t">
-                  <td className="px-5 py-3 font-medium">{t.label}</td>
-                  <td className="px-5 py-3">
-                    <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${t.kind === "credit" ? "bg-primary/10 text-primary" : "bg-secondary text-foreground"}`}>
-                      {t.kind === "credit" ? "Credit" : "Paid"}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3 text-muted-foreground">{new Date(t.when).toLocaleString()}</td>
-                  <td className={`px-5 py-3 text-right font-semibold ${t.kind === "payment" ? "text-muted-foreground" : ""}`}>
-                    {t.kind === "payment" ? "− " : ""}{fmt(t.amount)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="space-y-0">
+            {timeline.map((t) => (
+              <div key={`${t.kind}-${t.id}`} className="flex items-center justify-between border-b py-3 text-sm">
+                <div className="flex items-center gap-3 flex-1">
+                  <div className={`h-2.5 w-2.5 rounded-full flex-shrink-0 ${t.kind === "credit" ? "bg-slate-400" : "bg-green-500"}`}></div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">{t.label}</p>
+                    <p className="text-xs text-muted-foreground">{new Date(t.when).toLocaleDateString()}</p>
+                  </div>
+                </div>
+                <p className={`px-3 text-right font-semibold flex-shrink-0 ${t.kind === "payment" ? "text-muted-foreground" : ""}`}>
+                  {t.kind === "payment" ? "− " : ""}{fmt(t.amount)}
+                </p>
+              </div>
+            ))}
+          </div>
         )}
+        </div>
+
+        <div className="mt-6 flex items-center justify-between border-t pt-4">
+          <div>
+            <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Remaining due</div>
+            <div className="mt-1 text-2xl font-bold text-primary">{fmt(outstanding)}</div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -129,7 +193,7 @@ function CustomerDetail() {
 
 function Stat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
-    <div className="rounded-xl border p-5">
+    <div className="p-5">
       <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</div>
       <div className={`mt-2 text-2xl font-bold ${accent ? "text-primary" : ""}`}>{value}</div>
     </div>
@@ -140,6 +204,7 @@ function QuickAddPanel({ onSubmit, pending }: { onSubmit: (items: ParsedItem[]) 
   const [text, setText] = useState("");
   const [items, setItems] = useState<ParsedItem[]>([]);
   const [listening, setListening] = useState(false);
+  const [lang, setLang] = useState("en-US");
   const recRef = useRef<SpeechHandle | null>(null);
   const supportsMic = typeof window !== "undefined" &&
     !!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition);
@@ -173,6 +238,7 @@ function QuickAddPanel({ onSubmit, pending }: { onSubmit: (items: ParsedItem[]) 
       },
       onError: (err) => { toast.error(`Mic: ${err}`); setListening(false); },
       onEnd: () => setListening(false),
+      lang,
     });
     if (!rec) {
       toast.error("Speech recognition not supported in this browser");
@@ -276,5 +342,46 @@ function MicIcon() {
       <path d="M5 11a7 7 0 0 0 14 0" />
       <line x1="12" y1="18" x2="12" y2="22" />
     </svg>
+  );
+}
+
+function EditForm({ initial, onCancel, onSave, pending }: { initial: any; onCancel: () => void; onSave: (patch: Partial<any>) => void; pending: boolean }) {
+  const [form, setForm] = useState({
+    name: initial.name || "",
+    phone: initial.phone || "",
+    email: initial.email || "",
+    address: initial.address || "",
+    notes: initial.notes || "",
+  });
+
+  return (
+    <form onSubmit={(e) => { e.preventDefault(); onSave(form); }} className="space-y-4">
+      <label className="block">
+        <span className="mb-1.5 block text-xs font-medium text-muted-foreground">Name *</span>
+        <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="h-11 w-full rounded-lg border bg-background px-3 text-sm outline-none" />
+      </label>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <label className="block">
+          <span className="mb-1.5 block text-xs font-medium text-muted-foreground">Phone</span>
+          <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="h-11 w-full rounded-lg border bg-background px-3 text-sm outline-none" />
+        </label>
+        <label className="block">
+          <span className="mb-1.5 block text-xs font-medium text-muted-foreground">Email</span>
+          <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="h-11 w-full rounded-lg border bg-background px-3 text-sm outline-none" />
+        </label>
+      </div>
+      <label className="block">
+        <span className="mb-1.5 block text-xs font-medium text-muted-foreground">Address</span>
+        <input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="h-11 w-full rounded-lg border bg-background px-3 text-sm outline-none" />
+      </label>
+      <label className="block">
+        <span className="mb-1.5 block text-xs font-medium text-muted-foreground">Notes</span>
+        <input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="h-11 w-full rounded-lg border bg-background px-3 text-sm outline-none" />
+      </label>
+      <div className="flex justify-end gap-2 pt-2">
+        <button type="button" onClick={onCancel} className="h-10 rounded-full border px-5 text-sm font-medium hover:bg-secondary">Cancel</button>
+        <button disabled={pending} className="h-10 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50">Save</button>
+      </div>
+    </form>
   );
 }

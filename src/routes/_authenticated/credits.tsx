@@ -57,38 +57,35 @@ function CreditsPage() {
   return (
     <div>
       <Header title="Credit" sub="One row per customer — tap to see entries." action={
-        <>
-          <button onClick={() => setOpen(true)} className="inline-flex h-10 items-center justify-center rounded-full bg-primary px-3 text-sm font-semibold text-primary-foreground hover:opacity-90 sm:hidden whitespace-nowrap">New Entry</button>
-          <button onClick={() => setOpen(true)} className="inline-flex h-10 items-center justify-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground hover:opacity-90 hidden sm:inline-flex">+ New credit entry</button>
-        </>
+        <button onClick={() => setOpen(true)} className="inline-flex w-full sm:w-auto h-10 items-center justify-center rounded-full bg-primary px-3 sm:px-5 text-sm font-semibold text-primary-foreground hover:opacity-90 whitespace-nowrap">+ New entry</button>
       }/>
       {isLoading ? <p className="text-sm text-muted-foreground">Loading…</p> :
         summaries.length === 0 ? <EmptyState msg="No credit entries yet." /> :
-        <div className="overflow-hidden rounded-xl border">
+        <div className="overflow-x-auto rounded-xl border">
           <table className="w-full text-sm">
             <thead className="bg-secondary text-left text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
-                <th className="px-5 py-3">Customer</th>
-                <th className="px-5 py-3 hidden sm:table-cell">Entries</th>
-                <th className="px-5 py-3">Last entry</th>
-                <th className="px-5 py-3 text-right">Credit</th>
-                <th className="px-5 py-3 text-right hidden sm:table-cell">Paid</th>
-                <th className="px-5 py-3 text-right hidden sm:table-cell">Outstanding</th>
+                <th className="px-3 sm:px-5 py-3 whitespace-nowrap">Customer</th>
+                <th className="px-3 sm:px-5 py-3 hidden sm:table-cell whitespace-nowrap">Entries</th>
+                <th className="px-3 sm:px-5 py-3 whitespace-nowrap">Last entry</th>
+                <th className="px-3 sm:px-5 py-3 text-right whitespace-nowrap">Credit</th>
+                <th className="px-3 sm:px-5 py-3 text-right hidden sm:table-cell whitespace-nowrap">Paid</th>
+                <th className="px-3 sm:px-5 py-3 text-right hidden sm:table-cell whitespace-nowrap">Outstanding</th>
               </tr>
             </thead>
             <tbody>
               {summaries.map((s) => (
                 <tr key={s.customer_id} className="border-t hover:bg-secondary/40">
-                  <td className="px-5 py-3 font-medium">
-                    <Link to="/customers/$customerId" params={{ customerId: s.customer_id }} className="hover:text-primary hover:underline">
+                  <td className="px-3 sm:px-5 py-3 font-medium whitespace-nowrap">
+                    <Link to="/customers/$customerId" params={{ customerId: s.customer_id }} className="hover:text-primary hover:underline truncate block">
                       {s.name}
                     </Link>
                   </td>
-                  <td className="px-5 py-3 text-muted-foreground hidden sm:table-cell">{s.entries}</td>
-                  <td className="px-5 py-3 text-muted-foreground">{new Date(s.last_at).toLocaleDateString()}</td>
-                  <td className="px-5 py-3 text-right">{fmt(s.total_credit)}</td>
-                  <td className="px-5 py-3 text-right text-muted-foreground hidden sm:table-cell">{fmt(s.total_paid)}</td>
-                  <td className={`px-5 py-3 text-right font-semibold hidden sm:table-cell ${s.outstanding > 0 ? "text-primary" : ""}`}>{fmt(s.outstanding)}</td>
+                  <td className="px-3 sm:px-5 py-3 text-muted-foreground hidden sm:table-cell whitespace-nowrap">{s.entries}</td>
+                  <td className="px-3 sm:px-5 py-3 text-muted-foreground whitespace-nowrap">{new Date(s.last_at).toLocaleDateString()}</td>
+                  <td className="px-3 sm:px-5 py-3 text-right whitespace-nowrap">{fmt(s.total_credit)}</td>
+                  <td className="px-3 sm:px-5 py-3 text-right text-muted-foreground hidden sm:table-cell whitespace-nowrap">{fmt(s.total_paid)}</td>
+                  <td className={`px-3 sm:px-5 py-3 text-right font-semibold hidden sm:table-cell whitespace-nowrap ${s.outstanding > 0 ? "text-primary" : ""}`}>{fmt(s.outstanding)}</td>
                 </tr>
               ))}
             </tbody>
@@ -268,25 +265,31 @@ function CreditDialog({ onClose }: { onClose: () => void }) {
 
         <Input label="Amount (₹) *" type="number" value={form.amount} onChange={(v) => setForm({ ...form, amount: v })} required />
         <div className="rounded-2xl border bg-secondary/40 p-3 space-y-3">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
               <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Items</div>
               <p className="text-sm text-muted-foreground">Speak or type item names and prices to build the list. The total amount will update automatically.</p>
             </div>
-            <button type="button" onClick={() => setItems([])} disabled={items.length === 0} className="text-xs font-medium text-muted-foreground hover:text-primary disabled:opacity-50">Clear</button>
+            <button type="button" onClick={() => setItems([])} disabled={items.length === 0} className="text-xs font-medium text-muted-foreground hover:text-primary disabled:opacity-50 whitespace-nowrap">Clear</button>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-1.5 sm:gap-2">
             <input
               type="text"
               value={itemText}
               onChange={(e) => setItemText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && itemText.trim()) {
+                  e.preventDefault();
+                  parseAndStageItems(itemText);
+                }
+              }}
               placeholder='e.g. "Milk 50, Bread 30"'
-              className="h-11 flex-1 rounded-lg border bg-background px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+              className="h-10 sm:h-11 flex-1 rounded-lg border bg-background px-2 sm:px-3 text-xs sm:text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
             />
             <button
               type="button"
               onClick={() => parseAndStageItems(itemText)}
-              className="inline-flex h-11 items-center justify-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground hover:opacity-90"
+              className="inline-flex h-10 sm:h-11 items-center justify-center rounded-lg bg-primary px-2 sm:px-4 text-xs sm:text-sm font-semibold text-primary-foreground hover:opacity-90 whitespace-nowrap"
             >
               Add
             </button>
@@ -295,7 +298,7 @@ function CreditDialog({ onClose }: { onClose: () => void }) {
               onClick={toggleItemsMic}
               disabled={!supportsMic}
               title={supportsMic ? "Speak item names and prices" : "Mic not supported"}
-              className={`inline-flex h-11 w-11 items-center justify-center rounded-lg border transition ${listeningItems ? "border-primary bg-primary text-primary-foreground animate-pulse" : "hover:bg-secondary"} disabled:opacity-40`}
+              className={`inline-flex h-10 sm:h-11 w-10 sm:w-11 items-center justify-center rounded-lg border transition ${listeningItems ? "border-primary bg-primary text-primary-foreground animate-pulse" : "hover:bg-secondary"} disabled:opacity-40`}
             >
               <MicIcon />
             </button>
@@ -327,10 +330,14 @@ function CreditDialog({ onClose }: { onClose: () => void }) {
                       <td className="px-4 py-2 text-right">
                         <input
                           type="number"
+                          inputMode="decimal"
                           value={item.price}
                           onChange={(e) => {
                             const price = Number(e.target.value);
                             setItems((prev) => prev.map((it, i) => i === idx ? { ...it, price } : it));
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') e.preventDefault();
                           }}
                           className="w-24 bg-transparent text-right text-sm outline-none"
                         />
@@ -352,19 +359,19 @@ function CreditDialog({ onClose }: { onClose: () => void }) {
         </div>
         <div className="space-y-1.5">
           <label className="text-xs font-medium text-muted-foreground">Description</label>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-2">
             <input
               type="text"
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
-              className="h-11 flex-1 rounded-lg border bg-background px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+              className="h-10 sm:h-11 flex-1 rounded-lg border bg-background px-2 sm:px-3 text-xs sm:text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
             />
             <button
               type="button"
               onClick={toggleDescriptionMic}
               disabled={!supportsMic}
               title={supportsMic ? "Dictate description" : "Mic not supported"}
-              className={`inline-flex h-11 w-11 items-center justify-center rounded-lg border transition ${listeningDescription ? "border-primary bg-primary text-primary-foreground animate-pulse" : "hover:bg-secondary"} disabled:opacity-40`}
+              className={`inline-flex h-10 sm:h-11 w-10 sm:w-11 items-center justify-center rounded-lg border transition ${listeningDescription ? "border-primary bg-primary text-primary-foreground animate-pulse" : "hover:bg-secondary"} disabled:opacity-40`}
             >
               <MicIcon />
             </button>
@@ -372,9 +379,9 @@ function CreditDialog({ onClose }: { onClose: () => void }) {
           {listeningDescription && <p className="text-xs text-primary">Listening… speak a description in English or Hindi.</p>}
         </div>
         <p className="text-xs text-muted-foreground">Date and time are recorded automatically.</p>
-        <div className="flex justify-end gap-2 pt-2">
-          <button type="button" onClick={onClose} className="h-10 rounded-full border px-5 text-sm font-medium hover:bg-secondary">Cancel</button>
-          <button disabled={submit.isPending} className="h-10 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50">Save</button>
+        <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-2">
+          <button type="button" onClick={onClose} className="h-10 rounded-full border px-5 text-sm font-medium hover:bg-secondary w-full sm:w-auto">Cancel</button>
+          <button disabled={submit.isPending} className="h-10 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50 w-full sm:w-auto">Save</button>
         </div>
       </form>
     </Modal>

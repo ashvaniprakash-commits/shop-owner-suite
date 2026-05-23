@@ -43,36 +43,33 @@ function PaymentsPage() {
   return (
     <div>
       <Header title="Payments" sub="Each payment auto-deducts from the customer's outstanding." action={
-        <>
-          <button onClick={() => setOpen(true)} className="h-10 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground hover:opacity-90 sm:hidden whitespace-nowrap" >Add New</button>
-          <button onClick={() => setOpen(true)} className="hidden sm:inline-flex h-10 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground hover:opacity-90">+ Record payment</button>
-        </>
+        <button onClick={() => setOpen(true)} className="w-full sm:w-auto h-10 rounded-full bg-primary px-3 sm:px-5 text-sm font-semibold text-primary-foreground hover:opacity-90 whitespace-nowrap">+ Record payment</button>
       }/>
       {isLoading ? <p className="text-sm text-muted-foreground">Loading…</p> :
         summaries.length === 0 ? <EmptyState msg="No payments recorded yet." /> :
-        <div className="overflow-hidden rounded-xl border">
+        <div className="overflow-x-auto rounded-xl border">
           <table className="w-full text-sm">
             <thead className="bg-secondary text-left text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
-                <th className="px-5 py-3">Customer</th>
-                <th className="px-5 py-3 hidden sm:table-cell">Payments</th>
-                <th className="px-5 py-3">Last paid</th>
-                <th className="px-5 py-3 text-right">Paid</th>
-                <th className="px-5 py-3 text-right hidden sm:table-cell">Outstanding</th>
+                <th className="px-3 sm:px-5 py-3 whitespace-nowrap">Customer</th>
+                <th className="px-3 sm:px-5 py-3 hidden sm:table-cell whitespace-nowrap">Payments</th>
+                <th className="px-3 sm:px-5 py-3 whitespace-nowrap">Last paid</th>
+                <th className="px-3 sm:px-5 py-3 text-right whitespace-nowrap">Paid</th>
+                <th className="px-3 sm:px-5 py-3 text-right hidden sm:table-cell whitespace-nowrap">Outstanding</th>
               </tr>
             </thead>
             <tbody>
               {summaries.map((s) => (
                 <tr key={s.customer_id} className="border-t hover:bg-secondary/40">
-                  <td className="px-5 py-3 font-medium">
-                    <Link to="/customers/$customerId" params={{ customerId: s.customer_id }} className="hover:text-primary hover:underline">
+                  <td className="px-3 sm:px-5 py-3 font-medium whitespace-nowrap">
+                    <Link to="/customers/$customerId" params={{ customerId: s.customer_id }} className="hover:text-primary hover:underline truncate block">
                       {s.name}
                     </Link>
                   </td>
-                  <td className="px-5 py-3 text-muted-foreground hidden sm:table-cell">{s.payments}</td>
-                  <td className="px-5 py-3 text-muted-foreground">{new Date(s.last_at).toLocaleDateString()}</td>
-                  <td className="px-5 py-3 text-right font-semibold">{fmt(s.total_paid)}</td>
-                  <td className={`px-5 py-3 text-right font-semibold hidden sm:table-cell ${s.outstanding > 0 ? "text-primary" : "text-muted-foreground"}`}>{fmt(s.outstanding)}</td>
+                  <td className="px-3 sm:px-5 py-3 text-muted-foreground hidden sm:table-cell whitespace-nowrap">{s.payments}</td>
+                  <td className="px-3 sm:px-5 py-3 text-muted-foreground whitespace-nowrap">{new Date(s.last_at).toLocaleDateString()}</td>
+                  <td className="px-3 sm:px-5 py-3 text-right font-semibold whitespace-nowrap">{fmt(s.total_paid)}</td>
+                  <td className={`px-3 sm:px-5 py-3 text-right font-semibold hidden sm:table-cell whitespace-nowrap ${s.outstanding > 0 ? "text-primary" : "text-muted-foreground"}`}>{fmt(s.outstanding)}</td>
                 </tr>
               ))}
             </tbody>
@@ -112,9 +109,9 @@ function PaymentDialog({ onClose }: { onClose: () => void }) {
           options={customers.map((c) => ({ value: c.id, label: c.name }))} />
         <Input label="Amount (₹) *" type="number" value={form.amount} onChange={(v) => setForm({ ...form, amount: v })} required />
         <Input label="Notes" value={form.notes} onChange={(v) => setForm({ ...form, notes: v })} />
-        <div className="flex justify-end gap-2 pt-2">
-          <button type="button" onClick={onClose} className="h-10 rounded-full border px-5 text-sm font-medium hover:bg-secondary">Cancel</button>
-          <button disabled={create.isPending} className="h-10 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50">Save</button>
+        <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-2">
+          <button type="button" onClick={onClose} className="h-10 rounded-full border px-5 text-sm font-medium hover:bg-secondary w-full sm:w-auto">Cancel</button>
+          <button disabled={create.isPending} className="h-10 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50 w-full sm:w-auto">Save</button>
         </div>
       </form>
     </Modal>

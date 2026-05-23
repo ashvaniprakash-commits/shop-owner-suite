@@ -92,9 +92,9 @@ function CustomerDetail() {
         sub={[c.phone, c.email].filter(Boolean).join(" · ") || "Customer profile"}
       />
 
-      <div className="mb-4 flex flex-col gap-2 sm:flex-row">
-        <button onClick={() => setShowEdit(true)} className="h-10 rounded-full border px-4 text-sm font-medium hover:bg-secondary">Edit</button>
-        <button onClick={() => confirm('Remove this customer?') && removeCustomer.mutate()} className="h-10 rounded-full border px-4 text-sm font-medium text-red-600 hover:bg-secondary">Remove</button>
+      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:gap-3">
+        <button onClick={() => setShowEdit(true)} className="h-10 rounded-full border px-3 sm:px-4 text-sm font-medium hover:bg-secondary">Edit</button>
+        <button onClick={() => confirm('Remove this customer?') && removeCustomer.mutate()} className="h-10 rounded-full border px-3 sm:px-4 text-sm font-medium text-red-600 hover:bg-secondary">Remove</button>
         <button
           onClick={async () => {
             try {
@@ -121,13 +121,13 @@ function CustomerDetail() {
               toast.error(err?.message || "Failed to create PDF");
             }
           }}
-          className="h-10 rounded-full border px-4 text-sm font-medium hover:bg-secondary"
+          className="h-10 rounded-full border px-3 sm:px-4 text-sm font-medium hover:bg-secondary"
         >
           Share
         </button>
         <button
           onClick={() => setShowAdd((v) => !v)}
-          className="h-10 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground hover:opacity-90"
+          className="h-10 rounded-full bg-primary px-3 sm:px-5 text-sm font-semibold text-primary-foreground hover:opacity-90"
         >
           {showAdd ? "Close" : "+ Add entry"}
         </button>
@@ -317,14 +317,14 @@ function QuickAddPanel({ onSubmit, pending }: { onSubmit: (items: ParsedItem[]) 
               </tr>
             </tbody>
           </table>
-          <div className="flex justify-end gap-2 border-t bg-background p-3">
-            <button onClick={() => setItems([])} className="h-9 rounded-full border px-4 text-xs font-medium hover:bg-secondary">
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 border-t bg-background p-3">
+            <button onClick={() => setItems([])} className="h-9 rounded-full border px-4 text-xs font-medium hover:bg-secondary w-full sm:w-auto">
               Clear
             </button>
             <button
               disabled={pending || items.length === 0}
               onClick={() => onSubmit(items)}
-              className="h-9 rounded-full bg-primary px-5 text-xs font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
+              className="h-9 rounded-full bg-primary px-5 text-xs font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50 w-full sm:w-auto"
             >
               {pending ? "Saving…" : `Save ${items.length} entr${items.length === 1 ? "y" : "ies"}`}
             </button>
@@ -378,9 +378,9 @@ function EditForm({ initial, onCancel, onSave, pending }: { initial: any; onCanc
         <span className="mb-1.5 block text-xs font-medium text-muted-foreground">Notes</span>
         <input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="h-11 w-full rounded-lg border bg-background px-3 text-sm outline-none" />
       </label>
-      <div className="flex justify-end gap-2 pt-2">
-        <button type="button" onClick={onCancel} className="h-10 rounded-full border px-5 text-sm font-medium hover:bg-secondary">Cancel</button>
-        <button disabled={pending} className="h-10 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50">Save</button>
+      <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-2">
+        <button type="button" onClick={onCancel} className="h-10 rounded-full border px-5 text-sm font-medium hover:bg-secondary w-full sm:w-auto">Cancel</button>
+        <button disabled={pending} className="h-10 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50 w-full sm:w-auto">Save</button>
       </div>
     </form>
   );

@@ -28,7 +28,7 @@ function CustomersPage() {
   return (
     <div>
       <Header title="Customers" sub="Your private address book." action={
-        <button onClick={() => setOpen(true)} className="h-10 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground hover:opacity-90 whitespace-nowrap">+ New customer</button>
+        <button onClick={() => setOpen(true)} className="w-full sm:w-auto h-10 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground hover:opacity-90 whitespace-nowrap">+ New customer</button>
       }/>
       {isLoading ? <p className="text-sm text-muted-foreground">Loading…</p> :
         data.length === 0 ? <EmptyState msg="No customers yet. Add your first one." /> :
@@ -38,11 +38,11 @@ function CustomersPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-4">
               <div className="flex-1">
                 <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search customers" className="h-10 w-full rounded-lg border bg-background px-3 text-sm outline-none" />
               </div>
-              <div className="w-40">
+              <div className="w-full sm:w-40">
                 <select value={filter} onChange={(e) => setFilter(e.target.value)} className="h-10 w-full rounded-lg border bg-background px-3 text-sm outline-none">
                   <option value="all">All</option>
                   <option value="hasPhone">Has phone</option>
@@ -51,13 +51,13 @@ function CustomersPage() {
               </div>
             </div>
 
-            <div className="overflow-hidden rounded-xl border bg-background">
+            <div className="overflow-x-auto rounded-xl border bg-background">
               <table className="w-full text-sm">
                 <thead className="bg-secondary text-left text-xs uppercase tracking-wide text-muted-foreground">
                   <tr>
-                    <th className="px-5 py-3">Name</th>
-                    <th className="px-5 py-3">Phone</th>
-                    <th className="px-5 py-3">Notes</th>
+                    <th className="px-3 sm:px-5 py-3 whitespace-nowrap">Name</th>
+                    <th className="px-3 sm:px-5 py-3 whitespace-nowrap">Phone</th>
+                    <th className="px-3 sm:px-5 py-3 whitespace-nowrap">Notes</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -71,16 +71,16 @@ function CustomersPage() {
                     })
                     .slice(0, 25)
                     .map((c: Customer) => (
-                      <tr key={c.id} className="border-t">
-                        <td className="px-5 py-3 font-medium">
-                          <Link to="/customers/$customerId" params={{ customerId: c.id }} className="hover:text-primary hover:underline">
-                            {c.name}
-                          </Link>
-                        </td>
-                        <td className="px-5 py-3 text-muted-foreground">{c.phone ?? "—"}</td>
-                        <td className="px-5 py-3 text-muted-foreground">{c.notes ?? "—"}</td>
-                      </tr>
-                    ))}
+                        <tr key={c.id} className="border-t">
+                          <td className="px-3 sm:px-5 py-3 font-medium whitespace-nowrap">
+                            <Link to="/customers/$customerId" params={{ customerId: c.id }} className="hover:text-primary hover:underline truncate block">
+                              {c.name}
+                            </Link>
+                          </td>
+                          <td className="px-3 sm:px-5 py-3 text-muted-foreground whitespace-nowrap">{c.phone ?? "—"}</td>
+                          <td className="px-3 sm:px-5 py-3 text-muted-foreground truncate max-w-[120px]">{c.notes ?? "—"}</td>
+                        </tr>
+                      ))}
                 </tbody>
               </table>
             </div>
@@ -110,9 +110,9 @@ function CustomerDialog({ onClose }: { onClose: () => void }) {
         </div>
         <Input label="Address" value={form.address} onChange={(v) => setForm({ ...form, address: v })} />
         <Input label="Notes" value={form.notes} onChange={(v) => setForm({ ...form, notes: v })} />
-        <div className="flex justify-end gap-2 pt-2">
-          <button type="button" onClick={onClose} className="h-10 rounded-full border px-5 text-sm font-medium hover:bg-secondary">Cancel</button>
-          <button disabled={create.isPending} className="h-10 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50">Save</button>
+        <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-2">
+          <button type="button" onClick={onClose} className="h-10 rounded-full border px-5 text-sm font-medium hover:bg-secondary w-full sm:w-auto">Cancel</button>
+          <button disabled={create.isPending} className="h-10 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50 w-full sm:w-auto">Save</button>
         </div>
       </form>
     </Modal>
@@ -121,12 +121,12 @@ function CustomerDialog({ onClose }: { onClose: () => void }) {
 
 export function Header({ title, sub, action }: { title: string; sub?: string; action?: React.ReactNode }) {
   return (
-    <div className="mb-8 flex items-end justify-between gap-4">
-      <div>
+    <div className="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-4">
+      <div className="flex-1">
         <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
         {sub && <p className="mt-1 text-muted-foreground">{sub}</p>}
       </div>
-      {action}
+      {action && <div className="w-full sm:w-auto">{action}</div>}
     </div>
   );
 }

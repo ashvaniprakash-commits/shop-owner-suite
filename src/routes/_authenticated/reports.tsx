@@ -65,7 +65,7 @@ function ReportsPage() {
   return (
     <div>
       <Header title="Monthly reports" sub="Snapshots of your shop, month by month." action={
-        <button disabled={generate.isPending} onClick={() => generate.mutate()} className="h-10 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50">
+        <button disabled={generate.isPending} onClick={() => generate.mutate()} className="w-full sm:w-auto h-10 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50">
           {generate.isPending ? "Generating…" : "Generate"}
         </button>
       }/>
@@ -130,25 +130,25 @@ function ReportsPage() {
         ) : customerRows.length === 0 ? (
           <div className="mt-6"><EmptyState msg="No customer activity yet." /></div>
         ) : (
-          <div className="mt-6 overflow-hidden rounded-xl border">
-            <table className="w-full text-sm">
+          <div className="mt-6 overflow-x-auto rounded-xl border">
+            <table className="w-full min-w-max text-sm">
               <thead className="bg-secondary text-left text-xs uppercase tracking-wide text-muted-foreground">
                 <tr>
-                  <th className="px-5 py-3">Customer</th>
-                  <th className="px-5 py-3 text-right">Credit</th>
-                  <th className="px-5 py-3 text-right">Outstanding</th>
+                  <th className="px-3 sm:px-5 py-3 whitespace-nowrap">Customer</th>
+                  <th className="px-3 sm:px-5 py-3 text-right whitespace-nowrap">Credit</th>
+                  <th className="px-3 sm:px-5 py-3 text-right whitespace-nowrap">Outstanding</th>
                 </tr>
               </thead>
               <tbody>
                 {customerRows.map((s) => (
                   <tr key={s.customer_id} className="border-t hover:bg-secondary/40">
-                    <td className="px-5 py-3 font-medium">
-                      <Link to="/customers/$customerId" params={{ customerId: s.customer_id }} className="hover:text-primary hover:underline">
+                    <td className="px-3 sm:px-5 py-3 font-medium min-w-max">
+                      <Link to="/customers/$customerId" params={{ customerId: s.customer_id }} className="hover:text-primary hover:underline truncate block">
                         {s.name}
                       </Link>
                     </td>
-                    <td className="px-5 py-3 text-right">{fmt(s.total_credit)}</td>
-                    <td className={`px-5 py-3 text-right font-semibold ${s.outstanding > 0 ? "text-primary" : ""}`}>{fmt(s.outstanding)}</td>
+                    <td className="px-3 sm:px-5 py-3 text-right whitespace-nowrap min-w-max">{fmt(s.total_credit)}</td>
+                    <td className={`px-3 sm:px-5 py-3 text-right font-semibold whitespace-nowrap min-w-max ${s.outstanding > 0 ? "text-primary" : ""}`}>{fmt(s.outstanding)}</td>
                   </tr>
                 ))}
               </tbody>

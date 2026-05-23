@@ -1,0 +1,31 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ledger-app",
+  "main": "src/server.ts",
+  "type": "javascript",
+  "compatibility_date": "2025-09-24",
+  "compatibility_flags": ["nodejs_compat"],
+  "env": {
+    "production": {
+      "name": "ledger-production",
+      "routes": [
+        { "pattern": "ledger.shop", "zone_name": "ledger.shop" }
+      ]
+    },
+    "development": {
+      "name": "ledger-dev"
+    }
+  },
+  "build": {
+    "command": "npm run build",
+    "cwd": "./",
+    "watch_paths": ["src/**/*.tsx", "src/**/*.ts"],
+    "watch": false
+  },
+  "observability": {
+    "enabled": true
+  },
+  "limits": {
+    "cpu_ms": 50
+  }
+}

@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "ledger-app",
+  "name": "shop-owner-suite",
   "main": "src/server.ts",
   "type": "javascript",
   "compatibility_date": "2025-09-24",
